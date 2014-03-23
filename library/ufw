@@ -1,0 +1,291 @@
+#!/usr/bin/python
+
+DOCUMENTATION = '''
+---
+module: ufw
+author: Jasper N. Brouwer
+version_added: "1.4"
+short_description: Program for managing a netfilter firewall
+requirements: [ eselect ]
+description:
+    - This program is for managing a Linux firewall and aims to provide an easy to use interface for the user.
+options:
+    action:
+        required: true
+        choices: [ allow, deny, reject, limit, enable, disable, reload ]
+        description:
+            - The action to perform.
+    port:
+        required: false
+        description:
+            - The port this rule applies to. Can be a name specified in /etc/services.
+            - Applies to action C(allow), C(deny), C(reject), C(limit) only.
+    protocol:
+        required: false
+        default: tcp/udp
+        description:
+            - Limit the rule to a specific protocol.
+            - Applies to action C(allow), C(deny), C(reject), C(limit) only.
+    direction:
+        required: false
+        default: in
+        choices: [ in, out ]
+        description:
+            - The direction of traffic the rule applies to.
+            - Applies to action C(allow), C(deny), C(reject), C(limit) only.
+    interface:
+        required: false
+        description:
+            - Limit the rule to a specific interface.
+            - Applies to action C(allow), C(deny), C(reject), C(limit) only.
+            - Must be applied in conjunction with C(direction).
+            - Cannot be applied in conjunction with C(port).
+    insert:
+        required: false
+        description:
+            - Insert the rule at a specific position.
+            - Applies to action C(allow), C(deny), C(reject), C(limit) only.
+    log:
+        required: false
+        default: none
+        choices: [ none, new, all ]
+        description:
+            - Log nothing (C(none)), all new connections (C(new)) or all packets (C(all)) matching the rule.
+            - Applies to action C(allow), C(deny), C(reject), C(limit) only.
+    from_addr:
+        required: false
+        description:
+            - Limit the rule to an address where traffic comes from. Can be a single IP (192.168.0.1) or a network (192.168.0.0/16).
+            - Applies to action C(allow), C(deny), C(reject), C(limit) only.
+            - Cannot be applied in conjunction with C(port).
+    from_port:
+        required: false
+        description:
+            - Limit the rule to a port where traffic comes from. Can be a single port (80), a list (80,8080) or a range (8080:8090).
+            - Applies to action C(allow), C(deny), C(reject), C(limit) only.
+            - Must be applied in conjunction with C(from_addr).
+            - Cannot be applied in conjunction with C(port).
+    to_addr:
+        required: false
+        description:
+            - Limit the rule to an address where traffic goes to. Can be a single IP (192.168.0.1) or a network (192.168.0.0/16).
+            - Applies to action C(allow), C(deny), C(reject), C(limit) only.
+            - Cannot be applied in conjunction with C(port).
+    to_port:
+        required: false
+        description:
+            - Limit the rule to a port where traffic goes to. Can be a single port (80), a list (80,8080) or a range (8080:8090).
+            - Applies to action C(allow), C(deny), C(reject), C(limit) only.
+            - Must be applied in conjunction with C(to_addr).
+            - Cannot be applied in conjunction with C(port).
+    delete:
+        required: false
+        default: no
+        choices: [ yes, no ]
+        description:
+            - Delete the rule instead of adding it.
+            - Applies to action C(allow), C(deny), C(reject), C(limit) only.
+    dryrun:
+        required: false
+        default: no
+        choices: [ yes, no ]
+        description:
+            - Don't apply the rule, but show what will happen.
+
+'''
+
+EXAMPLES = '''
+- ufw: action=allow port=53
+- ufw: action=allow port=25 protocol=tcp
+- ufw: action=allow port=smtp
+- ufw: action=allow direction=in port=80
+- ufw: action=reject direction=out port=25
+- ufw: action=deny protocol=tcp to_addr=any to_port=80
+- ufw: action=deny protocol=tcp from_addr=10.0.0.0/8 to_addr=192.168.0.1 to_port=25
+- ufw: action=deny protocol=tcp from_addr=2001:db8::/32 to_addr=any to_port=25
+- ufw: action=allow protocol=tcp from_addr=any to_addr=any to_port=80,443,8080:8090
+- ufw: action=limit port=ssh protocol=tcp
+- ufw: action=reject port=auth
+- ufw: action=allow direction=in interface=eth0 to_addr=any to_port=80 protocol=tcp
+- ufw: action=deny port=80 protocol=tcp delete=yes
+- ufw: action=deny to_addr=any to_port=22 from_addr=10.0.0.135 protocol=tcp insert=3
+'''
+
+class Ufw(object):
+
+    def __init__(self, module):
+        self.module    = module
+        self.action    = module.params['action']
+        self.port      = module.params['port']
+        self.protocol  = module.params['protocol']
+        self.direction = module.params['direction']
+        self.interface = module.params['interface']
+        self.insert    = module.params['insert']
+        self.log       = module.params['log']
+        self.from_addr = module.params['from_addr']
+        self.from_port = module.params['from_port']
+        self.to_addr   = module.params['to_addr']
+        self.to_port   = module.params['to_port']
+        self.delete    = module.params['delete']
+        self.dryrun    = module.params['dryrun']
+
+        if self.action not in ['allow', 'deny', 'reject', 'limit']:
+            if self.port != None:
+                module.fail_json(msg='C(port) cannot be used with C(action=%s)' % self.action)
+            if self.protocol != None:
+                module.fail_json(msg='C(protocol) cannot be used with C(action=%s)' % self.action)
+            if self.direction != None:
+                module.fail_json(msg='C(direction) cannot be used with C(action=%s)' % self.action)
+            if self.interface != None:
+                module.fail_json(msg='C(interface) cannot be used with C(action=%s)' % self.action)
+            if self.insert != None:
+                module.fail_json(msg='C(insert) cannot be used with C(action=%s)' % self.action)
+            if self.log != None:
+                module.fail_json(msg='C(log) cannot be used with C(action=%s)' % self.action)
+            if self.from_addr != None:
+                module.fail_json(msg='C(from_addr) cannot be used with C(action=%s)' % self.action)
+            if self.from_port != None:
+                module.fail_json(msg='C(from_port) cannot be used with C(action=%s)' % self.action)
+            if self.to_addr != None:
+                module.fail_json(msg='C(to_addr) cannot be used with C(action=%s)' % self.action)
+            if self.to_port != None:
+                module.fail_json(msg='C(to_port) cannot be used with C(action=%s)' % self.action)
+
+            if self.interface != None:
+                if self.port != None:
+                    module.fail_json(msg='C(interface) cannot be used with C(port)')
+                if self.direction == None:
+                    module.fail_json(msg='C(interface) cannot be used without C(direction)')
+
+            if self.from_port != None and self.from_addr == None:
+                module.fail_json(msg='C(from_port) cannot be used without C(from_addr)')
+            if self.to_port != None and self.to_addr == None:
+                module.fail_json(msg='C(to_port) cannot be used without C(to_addr)')
+
+    def check_state(self):
+        cmd = [self.module.get_bin_path('ufw', True)]
+        cmd.append('show')
+        cmd.append('user-rules')
+
+        (rc, out, err) = self.module.run_command(cmd)
+
+        if rc != 0:
+            module.fail_json(msg=err)
+
+        digest = _md5()
+        digest.update(out)
+        return digest.hexdigest()
+
+    def execute_rule(self):
+        cmd = [self.module.get_bin_path('ufw', True)]
+
+        if self.dryrun != False:
+            cmd.append('--dry-run')
+
+        if self.delete != False:
+            cmd.append('delete')
+
+        if self.insert != None:
+            cmd.append('insert')
+            cmd.append(self.insert)
+
+        cmd.append(self.action)
+
+        if self.direction == 'out' or self.interface != None:
+            cmd.append(self.direction)
+        if self.interface != None:
+            cmd.append('on')
+            cmd.append(self.interface)
+
+        if self.log == 'new':
+            cmd.append('log')
+        elif self.log == 'all':
+            cmd.append('log-all')
+
+        if self.port != None:
+
+            if self.protocol == None:
+                cmd.append(self.port)
+            else:
+                cmd.append('%s/%s' % self.port, self.protocol)
+
+        else:
+            if self.protocol != None:
+                cmd.append('proto')
+                cmd.append(self.protocol)
+
+            if self.from_addr != None:
+                cmd.append('from')
+                cmd.append(self.from_addr)
+                if self.from_port != None:
+                    cmd.append('port')
+                    cmd.append(self.from_port)
+
+            if self.to_addr != None:
+                cmd.append('to')
+                cmd.append(self.to_addr)
+                if self.to_port != None:
+                    cmd.append('port')
+                    cmd.append(self.to_port)
+
+        return self.module.run_command(cmd)
+
+    def execute_command(self):
+        cmd = [self.module.get_bin_path('ufw', True)]
+
+        cmd.append(self.action)
+
+        return self.module.run_command(cmd)
+
+
+def main():
+    module = AnsibleModule(
+        argument_spec = dict(
+            action    = dict(required=True, default=None, choices=['allow', 'deny', 'reject', 'limit', 'enable', 'disable', 'reload'], type='str'),
+            port      = dict(required=False, default=None, type='str'),
+            protocol  = dict(required=False, default=None, type='str'),
+            direction = dict(required=False, default=None, choices=['in', 'out'], type='str'),
+            interface = dict(required=False, default=None, type='str'),
+            insert    = dict(required=False, default=None, type='int'),
+            log       = dict(required=False, default=None, choices=['none', 'new', 'all'], type='str'),
+            from_addr = dict(required=False, default=None, type='str'),
+            from_port = dict(required=False, default=None, type='str'),
+            to_addr   = dict(required=False, default=None, type='str'),
+            to_port   = dict(required=False, default=None, type='str'),
+            delete    = dict(required=False, default=False, type='bool'),
+            dryrun    = dict(required=False, default=False, type='bool')
+        )
+    )
+
+    ufw = Ufw(module)
+
+    rc  = None
+    out = ''
+    err = ''
+
+    if ufw.action in ['allow', 'deny', 'reject', 'limit']:
+        state          = ufw.check_state()
+        (rc, out, err) = ufw.execute_rule()
+        changed        = (state != ufw.check_state())
+
+    elif ufw.action in ['enable', 'disable', 'reload']:
+        state          = ufw.check_state()
+        (rc, out, err) = eselect.execute_command()
+        changed        = (state != ufw.check_state())
+
+    result = {'changed': changed}
+
+    if rc != None:
+        result['rc'] = rc
+    if out:
+        result['stdout'] = out
+    if err:
+        result['stderr'] = err
+
+    module.exit_json(**result)
+
+
+# this is magic, see lib/ansible/module_common.py
+#<<INCLUDE_ANSIBLE_MODULE_COMMON>>
+
+main()
