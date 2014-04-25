@@ -91,7 +91,12 @@ options:
         choices: [ yes, no ]
         description:
             - Don't apply the rule, but show what will happen.
-
+    default:
+        required: false
+        default: no
+        choices: [ yes, no ]
+        description:
+            - Use it with C(allow) or C(deny) to set the default behaviour
 '''
 
 EXAMPLES = '''
@@ -109,6 +114,7 @@ EXAMPLES = '''
 - ufw: action=allow direction=in interface=eth0 to_addr=any to_port=80 protocol=tcp
 - ufw: action=deny port=80 protocol=tcp delete=yes
 - ufw: action=deny to_addr=any to_port=22 from_addr=10.0.0.135 protocol=tcp insert=3
+- ufw: action=deny default=yes
 '''
 
 class Ufw(object):
@@ -128,6 +134,7 @@ class Ufw(object):
         self.to_port   = module.params['to_port']
         self.delete    = module.params['delete']
         self.dryrun    = module.params['dryrun']
+        self.default   = module.params['default']
 
         if self.action not in ['allow', 'deny', 'reject', 'limit']:
             if self.port != None:
@@ -188,6 +195,9 @@ class Ufw(object):
         if self.insert != None:
             cmd.append('insert')
             cmd.append(self.insert)
+
+        if self.default:
+            cmd.append('default')
 
         cmd.append(self.action)
 
@@ -253,7 +263,8 @@ def main():
             to_addr   = dict(required=False, default=None, type='str'),
             to_port   = dict(required=False, default=None, type='str'),
             delete    = dict(required=False, default=False, type='bool'),
-            dryrun    = dict(required=False, default=False, type='bool')
+            dryrun    = dict(required=False, default=False, type='bool'),
+            default   = dict(required=False, default=False, type='bool')
         )
     )
 
