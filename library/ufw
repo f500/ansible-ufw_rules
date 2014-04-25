@@ -207,7 +207,7 @@ class Ufw(object):
             if self.protocol == None:
                 cmd.append(self.port)
             else:
-                cmd.append('%s/%s' % self.port, self.protocol)
+                cmd.append('%s/%s' % (self.port, self.protocol))
 
         else:
             if self.protocol != None:
