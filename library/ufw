@@ -170,7 +170,7 @@ class Ufw(object):
         (rc, out, err) = self.module.run_command(cmd)
 
         if rc != 0:
-            module.fail_json(msg=err)
+            self.module.fail_json(msg=err)
 
         digest = _md5()
         digest.update(out)
