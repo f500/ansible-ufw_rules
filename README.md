@@ -6,7 +6,7 @@ Install UWF (Uncomplicated Firewall)
 Requirements
 ------------
 
-Debian Wheezy with the package python-pycurl and python-software-properties installed.
+Debian Wheezy/Jessie with the package python-pycurl and python-software-properties installed.
 Requires the ufw firewall to be installed on the guest.
 
 Role Variables
