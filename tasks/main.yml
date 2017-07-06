@@ -1,5 +1,9 @@
 ---
 
+- name: set default policy
+  ufw:
+    policy: "{{ ufw_rules_default_policy }}"
+
 - name: create rules
   ufw:
     direction: "{{ item.direction|default(omit) }}"

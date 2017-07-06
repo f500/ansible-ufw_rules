@@ -12,7 +12,9 @@ Requires the ufw firewall to be installed on the guest.
 Role Variables
 --------------
 
-ufw_rules_allow_ports: []
+Set the default policy:
+
+    ufw_rules_default_policy: deny
 
 Add or remove rules:
 
