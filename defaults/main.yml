@@ -1,3 +1,4 @@
 ---
 
-ufw_rules_allow_ports: []
+ufw_rules_to_create: []
+ufw_rules_to_delete: []

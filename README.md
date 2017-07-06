@@ -14,6 +14,22 @@ Role Variables
 
 ufw_rules_allow_ports: []
 
+Add or remove rules:
+
+    ufw_rules_to_create: []
+    ufw_rules_to_delete: []
+
+Both `ufw_rules_to_create` and `ufw_rules_to_delete` accept a list of dictionaries, like so:
+
+    ufw_rules_to_create:
+      - direction: in
+        from_ip: 1.2.3.4
+        from_port: 5678
+        interface: eth0
+        proto: tcp
+        rule: allow
+        to_ip: 5.6.7.8
+        to_port: 1234
 
 Example Playbook
 -------------------------
