@@ -10,6 +10,7 @@ galaxy_info:
     versions:
       - wheezy
       - jessie
+      - stretch
   categories:
     - system
 dependencies: []
