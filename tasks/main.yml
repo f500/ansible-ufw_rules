@@ -1,7 +1,7 @@
 ---
 
-- name: Deprecation failure
-  fail: msg="Legacy variable ufw_rules_allow_ports is deprecated, please upgrade to ufw_rules_to_create and ufw_rules_to_delete"
+- name: Legacy config failure
+  fail: msg="Legacy variable ufw_rules_allow_ports is no longer supported. You MUST upgrade to ufw_rules_to_create and ufw_rules_to_delete"
   when: ufw_rules_allow_ports is defined
 
 - name: set default policy
