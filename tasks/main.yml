@@ -1,7 +1,7 @@
 ---
 
 - name: Legacy config failure
-  fail: msg="Legacy variable ufw_rules_allow_ports is no longer supported. You MUST upgrade to ufw_rules_to_create and ufw_rules_to_delete"
+  fail: msg="Legacy variable ufw_rules_allow_ports is no longer supported. You MUST upgrade to ufw_rules_to_create and ufw_rules_to_delete. The format has changed, so please check the documentation for more information."
   when: ufw_rules_allow_ports is defined
 
 - name: set default policy
