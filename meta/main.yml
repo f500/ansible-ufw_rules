@@ -6,11 +6,11 @@ galaxy_info:
   license: LGPL-3.0
   min_ansible_version: 1.6
   platforms:
-  - name: Debian
-    versions:
-      - wheezy
-      - jessie
-      - stretch
-  categories:
+    - name: Debian
+      versions:
+        - wheezy
+        - jessie
+        - stretch
+  galaxy_tags:
     - system
-dependencies: []
+    - security
